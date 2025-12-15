@@ -5,9 +5,10 @@ This project implements autonomous driving (Red Box Tracking) for a Duckiebot wi
 
 * **Development Environment:** WSL2 (Ubuntu 22.04), ROS2 Humble, NVIDIA Isaac Sim 4.x
 * **Key Features:**
-    * OpenCV-based Color Recognition & Tracking (Red Box Follower)
-    * P-Control based Autonomous Driving Algorithm
-    * Motor Control based on Inverse Kinematics
+    * **Autonomous Driving:** OpenCV-based Color Recognition & Tracking (Red Box Follower)
+    * **High-level Control:** Manual driving support via Keyboard Teleoperation & P-Control Algorithm
+    * **Low-level Control:** Motor Control based on Inverse Kinematics
+    * **LED Control Logic:** Publishes status-based LED color commands via ROS2 topics
 
 ## 2. File Descriptions
 * **`lsy_project.usd` (Simulation Stage)**
@@ -15,7 +16,7 @@ This project implements autonomous driving (Red Box Tracking) for a Duckiebot wi
   - Includes the Duckiebot robot model, physics properties, and camera sensor settings.
   - Contains the built-in **Action Graph** responsible for communication between ROS2 and the simulator.
 
-* **`duckie_driver.py` (High-level Control)**
+* **`duckie_driver.py` (High-level Control - Auto)**
   - Subscribes to the camera topic (`/duckie/camera/image_raw`) to detect red objects.
   - Controls speed based on distance (object area) and rotation based on position error using P-Control.
   - Publishes Twist (linear/angular velocity) commands to the `/duckie/cmd_vel` topic.
@@ -36,7 +37,7 @@ This project requires **WSL2 (Ubuntu 22.04)** for the ROS2 nodes and **Isaac Sim
    * *(Note: The ROS2 Bridge is activated only after clicking Play.)*
 
 ### Step 2: Run Low-level Control Node (Terminal 1)
-Open a new WSL terminal and run the following commands:
+Open a new WSL terminal and run the following commands to start the motor driver.
 ```bash
 # Source ROS2 environment (Required)
 source /opt/ros/humble/setup.bash
@@ -48,8 +49,12 @@ cd ~/path/to/your/project
 python3 duckie_low_level.py
 
 ```
-### Step 3: Run Autonomous Driving Driver (Terminal 2)
-Open another WSL terminal and run:
+### Step 3: Choose Control Mode (Terminal 2)
+You can choose between Autonomous Mode or Manual Keyboard Mode.
+
+Option A: Autonomous Driving (Red Box Follower)
+Runs the computer vision algorithm to track red objects.
+
 ```bash
 # Source ROS2 environment
 source /opt/ros/humble/setup.bash
@@ -57,13 +62,51 @@ source /opt/ros/humble/setup.bash
 # Navigate to project directory
 cd ~/path/to/your/project
 
-# Run the node
+# Run the driver
 python3 duckie_driver.py
+```
+Option B: Manual High-level Control (Keyboard)
+Allows you to drive the Duckiebot manually using keyboard commands.
+
+Install the Teleop Package (If not installed):
+
+
+```bash
+sudo apt-get install ros-humble-teleop-twist-keyboard
 
 ```
-### Step 4: Verification
-OpenCV Window: Verify that the "Red Box View" window appears, showing the robot's vision (Green Bounding Box).
+Run the Keyboard Controller:
 
-Isaac Sim: Confirm that the Duckiebot is autonomously following the red box.
+Note: We remap the topic to match our robot's configuration.
+
+
+```bash
+source /opt/ros/humble/setup.bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/duckie/cmd_vel
+```
+Controls: i (Forward), k (Stop), j (Left), l (Right), , (Backward)
+
+
+### Step 4: LED Control Test (Terminal 3)
+You can test the LED control logic by publishing a Vector3 message manually.
+
+Red Light:
+
+
+```bash
+source /opt/ros/humble/setup.bash
+ros2 topic pub --once /duckie/led_inner geometry_msgs/msg/Vector3 "{x: 1.0, y: 0.0, z: 0.0}"
+
+```
+Green Light:
+
+```bash
+
+ros2 topic pub --once /duckie/led_inner geometry_msgs/msg/Vector3 "{x: 0.0, y: 1.0, z: 0.0}"
+```
+### Step 5: Verification
+OpenCV Window: Verify that the "Red Box View" window appears (in Option A).
+
+Isaac Sim: Confirm that the Duckiebot moves according to the selected control mode.
 
 Terminal Log: Check for logs such as Target Reached! Stopping.
